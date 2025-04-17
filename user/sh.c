@@ -13,6 +13,10 @@
 
 #define MAXARGS 10
 
+#define BLUE "\033[34m"
+#define RESET "\033[0m"
+
+
 struct cmd {
   int type;
 };
@@ -76,6 +80,38 @@ runcmd(struct cmd *cmd)
     ecmd = (struct execcmd*)cmd;
     if(ecmd->argv[0] == 0)
       exit(1);
+    if (ecmd->argv[0] && strcmp(ecmd->argv[0], "!") == 0) {
+      char message[30 + 1 /*... '/0' ...*/] = {0}; //maximum size is 30 although doc said 512, buffer can read MAXIMUM 100 chars
+      int len = 0;
+    
+      for (int i = 1; ecmd->argv[i] != 0; i++) {
+        int arglen = strlen(ecmd->argv[i]);
+        if (len + arglen + 1 > sizeof(message)) {
+          printf("Message too long\n");
+          exit(1);
+        }
+        memmove(message + len, ecmd->argv[i], arglen);
+        len += arglen;
+        message[len++] = ' ';
+      }
+      message[len > 0 ? len - 1 : 0] = '\0'; 
+    
+      // Print with "os" highlighted in blue
+      char *p = message;
+      while (*p) {
+        if (p[0] == 'o'&& p[1] == 's') {
+          printf("\033[0;34mos\033[0m");
+          p += 2;
+        } else {
+          write(1, p, 1);
+          p++;
+        }
+      }
+      char newline = '\n';
+      write(1, &newline, 1);
+
+      exit(0);
+    }
     exec(ecmd->argv[0], ecmd->argv);
     fprintf(2, "exec %s failed\n", ecmd->argv[0]);
     break;
