@@ -3,6 +3,7 @@
 #include "memlayout.h"
 #include "riscv.h"
 #include "defs.h"
+#include "custom_logger.h" 
 
 volatile static int started = 0;
 
@@ -31,6 +32,10 @@ main()
     userinit();      // first user process
     __sync_synchronize();
     started = 1;
+    log_message(LOG_LEVEL_INFO, "Welcome to AUT MCS Principles of Operating Systems Course. This message is from a custom logger implemented by student_number_1 and student_number_2");
+    log_message(LOG_LEVEL_WARN, "This is a test warning message for the custom logger");
+    log_message(LOG_LEVEL_ERROR, "This is a test error message for the custom logger");
+  
   } else {
     while(started == 0)
       ;
@@ -40,6 +45,5 @@ main()
     trapinithart();   // install kernel trap vector
     plicinithart();   // ask PLIC for device interrupts
   }
-
-  scheduler();        
+  scheduler();      
 }
