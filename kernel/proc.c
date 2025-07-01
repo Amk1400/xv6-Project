@@ -55,6 +55,7 @@ procinit(void)
       initlock(&p->lock, "proc");
       p->state = UNUSED;
       p->kstack = KSTACK((int) (p - proc));
+      p->current_thread = 0; // //Initialize current_thread to indicate
   }
 }
 
@@ -169,6 +170,10 @@ freeproc(struct proc *p)
   p->killed = 0;
   p->xstate = 0;
   p->state = UNUSED;
+  p->current_thread = 0; // Reset current_thread to null
+  for (int i = 0; i < NTHREAD; ++i) {
+    freethread(&p->threads[i]); // Free all threads associated with the process
+  }
 }
 
 // Create a user page table for a given process, with no user memory,
@@ -457,7 +462,7 @@ scheduler(void)
     int found = 0;
     for(p = proc; p < &proc[NPROC]; p++) {
       acquire(&p->lock);
-      if(p->state == RUNNABLE) {
+      if((p->state == RUNNABLE) && (thread_schd(p))) {
         // Switch to chosen process.  It is the process's job
         // to release its lock and then reacquire it
         // before jumping back to us.
