@@ -150,6 +150,18 @@ found:
   return p;
 }
 
+void
+freethread(struct thread *t)
+{
+ t->state = THREAD_UNUSED;
+ if (t->trapframe)
+ kfree((void*)t->trapframe);
+ t->trapframe = 0;
+ t->id = 0;
+ t->join = 0;
+}
+
+
 struct thread *allocthread(uint64 start_thread, uint64 stack_address,uint64 arg) {
   struct proc *p = myproc();
   if (!initthread(p))return 0;
@@ -170,6 +182,45 @@ struct thread *allocthread(uint64 start_thread, uint64 stack_address,uint64 arg)
     }
   }
   return 0;
+}
+
+void exitthread() {
+ struct proc *p = myproc();
+ uint id = p->current_thread->id;
+ for (struct thread *t = p->threads; t < p->threads + NTHREAD; t++) {
+    if (t->state == THREAD_JOINED && t->join == id) {
+      t->join = 0;
+      t->state = THREAD_RUNNABLE;
+    }
+ }
+ freethread(p->current_thread);
+ if (!thread_schd(p)) setkilled(p);
+}
+
+int jointhread(uint join_id) {
+ struct proc *p = myproc();
+ struct thread *t = p->current_thread;
+ if (!t) return -3;
+ int found = 0;
+ uint current_id = join_id;
+
+ while (current_id != 0) {
+    if (current_id == t->id) return -1; // deadlock
+    uint target_id = current_id;
+    current_id = 0;
+    for (int i = 0; i < NTHREAD; i++) {
+      if (p->threads[i].id == target_id) {
+        current_id = p->threads[i].join;
+        found = 1;
+        break;
+      }
+    }
+ }
+ if (!found) return -2;
+ t->join = join_id;
+ t->state = THREAD_JOINED;
+ yield();
+ return 0;
 }
 // free a proc structure and the data hanging from it,
 // including user pages.
