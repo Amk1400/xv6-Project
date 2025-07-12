@@ -182,6 +182,48 @@ initthread(struct proc *p)
   return p->current_thread;
 }
 
+int
+thread_schd(struct proc *p) {
+  if (!p->current_thread) {//if no thread then no scheduling 
+    return 1;
+  }
+  if (p->current_thread->state == THREAD_RUNNING) {
+    p->current_thread->state = THREAD_RUNNABLE;
+  }
+  acquire(&tickslock);
+  uint ticks0 = ticks;//clock tick
+  release(&tickslock);
+  struct thread *next = 0;
+  struct thread *t = p->current_thread + 1;
+  for (int i = 0; i < NTHREAD; i++, t++) {
+    if (t >= p->threads + NTHREAD) {
+      t = p->threads;
+    }
+
+    if (t->state == THREAD_RUNNABLE) {//runnable found
+      next = t;
+      break;
+    } else if (t->state == THREAD_SLEEPING && ticks0 - t->sleep_tick0 >= t->sleep_n) {//waked up found
+      next = t;
+      break;
+    }
+  }
+
+
+  if (next == 0) {//there is no runnable
+    return 0;
+  }else if (p->current_thread != next) {
+    next->state = THREAD_RUNNING;
+    struct thread *t = p->current_thread;
+    p->current_thread = next;
+
+    if (t->trapframe) {
+      *t->trapframe = *p->trapframe;
+    }
+    *p->trapframe = *next->trapframe;
+  }
+ return 1;
+}
 
 struct thread *allocthread(uint64 start_thread, uint64 stack_address,uint64 arg) {
   struct proc *p = myproc();
@@ -793,45 +835,3 @@ procdump(void)
 }
 
 
-int
-thread_schd(struct proc *p) {
-  if (!p->current_thread) {//if no thread then no scheduling 
-    return 1;
-  }
-  if (p->current_thread->state == THREAD_RUNNING) {
-    p->current_thread->state = THREAD_RUNNABLE;
-  }
-  acquire(&tickslock);
-  uint ticks0 = ticks;//clock tick
-  release(&tickslock);
-  struct thread *next = 0;
-  struct thread *t = p->current_thread + 1;
-  for (int i = 0; i < NTHREAD; i++, t++) {
-    if (t >= p->threads + NTHREAD) {
-      t = p->threads;
-    }
-
-    if (t->state == THREAD_RUNNABLE) {//runnable found
-      next = t;
-      break;
-    } else if (t->state == THREAD_SLEEPING && ticks0 - t->sleep_tick0 >= t->sleep_n) {//waked up found
-      next = t;
-      break;
-    }
-  }
-
-
-  if (next == 0) {//there is no runnable
-    return 0;
-  }else if (p->current_thread != next) {
-    next->state = THREAD_RUNNING;
-    struct thread *t = p->current_thread;
-    p->current_thread = next;
-
-    if (t->trapframe) {
-      *t->trapframe = *p->trapframe;
-    }
-    *p->trapframe = *next->trapframe;
-  }
- return 1;
-}
