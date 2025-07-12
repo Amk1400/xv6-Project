@@ -18,6 +18,17 @@ struct context {
   uint64 s11;
 };
 
+
+struct thread {
+ enum threadstate state;
+ struct trapframe *trapframe;
+ uint id;
+ uint join;
+ int sleep_n;
+ uint sleep_tick0;
+};
+
+
 // Per-CPU state.
 struct cpu {
   struct proc *proc;          // The process running on this cpu, or null.
@@ -120,11 +131,3 @@ enum threadstate {
 };
 
 
-struct thread {
- enum threadstate state;
- struct trapframe *trapframe;
- uint id;
- uint join;
- int sleep_n;
- uint sleep_tick0;
-};
