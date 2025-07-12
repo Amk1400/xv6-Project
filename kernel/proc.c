@@ -161,6 +161,27 @@ freethread(struct thread *t)
  t->join = 0;
 }
 
+struct thread *
+initthread(struct proc *p)
+{
+  if (!p->current_thread) {//if no active thread
+    for (int i = 0; i < NTHREAD; ++i) {//free all threads
+      p->threads[i].trapframe = 0;
+      freethread(&p->threads[i]);
+    }
+    // Initialize main thread
+    struct thread *t = &p->threads[0];
+    t->id = p->pid;
+    if ((t->trapframe = (struct trapframe *)kalloc()) == 0) {//allocation wasn successfull
+      freethread(t);
+      return 0;
+    }
+    t->state = THREAD_RUNNING;
+    p->current_thread = t;
+  }
+  return p->current_thread;
+}
+
 
 struct thread *allocthread(uint64 start_thread, uint64 stack_address,uint64 arg) {
   struct proc *p = myproc();
@@ -771,26 +792,6 @@ procdump(void)
   }
 }
 
-struct thread *
-initthread(struct proc *p)
-{
-  if (!p->current_thread) {//if no active thread
-    for (int i = 0; i < NTHREAD; ++i) {//free all threads
-      p->threads[i].trapframe = 0;
-      freethread(&p->threads[i]);
-    }
-    // Initialize main thread
-    struct thread *t = &p->threads[0];
-    t->id = p->pid;
-    if ((t->trapframe = (struct trapframe *)kalloc()) == 0) {//allocation wasn successfull
-      freethread(t);
-      return 0;
-    }
-    t->state = THREAD_RUNNING;
-    p->current_thread = t;
-  }
-  return p->current_thread;
-}
 
 int
 thread_schd(struct proc *p) {
