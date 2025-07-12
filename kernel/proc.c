@@ -247,6 +247,14 @@ struct thread *allocthread(uint64 start_thread, uint64 stack_address,uint64 arg)
   return 0;
 }
 
+void sleepthread(int n, uint ticks0) {
+ struct thread *t = myproc()->current_thread;
+ t->sleep_n = n;
+ t->sleep_tick0 = ticks0;
+ t->state = THREAD_SLEEPING;
+ thread_schd(myproc());
+}
+
 void exitthread() {
  struct proc *p = myproc();
  uint id = p->current_thread->id;
