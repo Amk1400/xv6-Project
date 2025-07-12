@@ -19,6 +19,14 @@ struct context {
 };
 
 
+enum threadstate {
+ THREAD_UNUSED,
+ THREAD_RUNNABLE,  
+ THREAD_RUNNING,
+ THREAD_JOINED,
+ THREAD_SLEEPING
+};
+
 struct thread {
  enum threadstate state;
  struct trapframe *trapframe;
@@ -120,14 +128,6 @@ struct proc {
   struct thread threads[NTHREAD]; // Array of threads belonging tothe process
   struct thread *current_thread; // Pointer to the currentlyrunning thread
   
-};
-
-enum threadstate {
- THREAD_UNUSED,
- THREAD_RUNNABLE,  
- THREAD_RUNNING,
- THREAD_JOINED,
- THREAD_SLEEPING
 };
 
 
