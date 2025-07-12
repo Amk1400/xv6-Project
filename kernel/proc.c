@@ -150,6 +150,27 @@ found:
   return p;
 }
 
+struct thread *allocthread(uint64 start_thread, uint64 stack_address,uint64 arg) {
+  struct proc *p = myproc();
+  if (!initthread(p))return 0;
+  for (struct thread *t = p->threads; t < p->threads + NTHREAD; t++) {
+    if (t->state == THREAD_UNUSED) {
+      t->id = allocpid();
+      if ((t->trapframe = (struct trapframe *)kalloc()) == 0) {
+        freethread(t);
+        break;
+      }
+      t->state = THREAD_RUNNABLE;
+      *t->trapframe = *p->trapframe;
+      t->trapframe->sp = stack_address;
+      t->trapframe->a0 = arg;
+      t->trapframe->ra = -1;
+      t->trapframe->epc = (uint64) start_thread;
+      return t;
+    }
+  }
+  return 0;
+}
 // free a proc structure and the data hanging from it,
 // including user pages.
 // p->lock must be held.
